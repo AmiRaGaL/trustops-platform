@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: trustops
+          POSTGRES_PASSWORD: trustops
+          POSTGRES_DB: trustops_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U trustops"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://trustops:trustops@localhost:5432/trustops_test?schema=public
+      JWT_SECRET: test-secret
+      JWT_EXPIRES_IN: 1d
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm install
+
+      - run: npm run db:migrate -w apps/api
+
+      - run: npm run lint -w apps/api
+
+      - run: npm run test -w apps/api
+
+      - run: npm run build -w apps/api
