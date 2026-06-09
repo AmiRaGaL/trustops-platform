@@ -1,8 +1,8 @@
 # trustops-platform
 
-TrustOps Platform is a portfolio-grade multi-tenant trust and safety operations platform. Phase 1 establishes the API foundation only: NestJS, PostgreSQL, Prisma, Redis via Docker Compose, authentication, users, organizations, memberships, seed data, tests, and CI.
+TrustOps Platform is a portfolio-grade multi-tenant trust and safety operations platform. The API foundation includes NestJS, PostgreSQL, Prisma, Redis via Docker Compose, authentication, users, organizations, memberships, seed data, tests, and CI.
 
-Moderation and reporting workflows are intentionally not implemented yet.
+Phase 2 adds the core moderation workflow: content items, user reports, moderator queues, assignments, status transitions, internal notes, moderation actions, and audit logs.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ npm run db:migrate -w apps/api
 npm run db:seed -w apps/api
 ```
 
-The seed creates demo users with the password `Password123!`:
+The seed creates demo users with the password `Password123!`, plus sample content and reports for moderation testing:
 
 - `owner@trustops.dev`
 - `admin@trustops.dev`
@@ -63,3 +63,36 @@ npm run build -w apps/api
 - `POST /memberships`
 - `GET /memberships/organizations/:organizationId`
 - `GET /memberships/users/:userId`
+
+## Phase 2 Endpoints
+
+User-facing:
+
+- `GET /content`
+- `GET /content/:id`
+- `POST /reports`
+- `GET /reports/my`
+
+Moderator/admin:
+
+- `GET /admin/reports`
+- `GET /admin/reports/:id`
+- `POST /admin/reports/:id/assign`
+- `POST /admin/reports/:id/notes`
+- `POST /admin/reports/:id/actions`
+- `POST /admin/reports/:id/escalate`
+- `GET /admin/audit-logs`
+
+The admin report queue supports cursor pagination with `cursor`, plus `status`, `reason`, `severity`, and `assignedModeratorId` filters. Admin endpoints require an authenticated user with `OWNER`, `ADMIN`, or `MODERATOR` membership in the report organization.
+
+Example moderation action:
+
+```bash
+curl -X POST http://localhost:3000/admin/reports/<report-id>/actions \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "actionType": "HIDE_CONTENT",
+    "reason": "Confirmed spam content."
+  }'
+```

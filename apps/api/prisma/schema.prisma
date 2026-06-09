@@ -14,23 +14,73 @@ enum Role {
   VIEWER
 }
 
+enum ContentType {
+  POST
+  COMMENT
+  PROFILE
+}
+
+enum ReportReason {
+  HARASSMENT
+  SPAM
+  HATE_SPEECH
+  IMPERSONATION
+  SELF_HARM
+  VIOLENCE
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  ESCALATED
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ModerationActionType {
+  WARN_USER
+  HIDE_CONTENT
+  SUSPEND_USER
+  DISMISS_REPORT
+  ESCALATE_REPORT
+  NO_ACTION
+}
+
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String?
-  passwordHash String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  memberships  Membership[]
+  id                         String             @id @default(cuid())
+  email                      String             @unique
+  name                       String?
+  passwordHash               String
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+  memberships                Membership[]
+  contentItems               ContentItem[]      @relation("ContentAuthor")
+  reports                    Report[]           @relation("ReportReporter")
+  assignedReports            Report[]           @relation("AssignedModerator")
+  reportEvents               ReportEvent[]
+  internalNotes              InternalNote[]
+  moderationActions          ModerationAction[]
+  auditLogs                  AuditLog[]
 }
 
 model Organization {
-  id          String       @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
-  slug        String       @unique
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  slug        String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   memberships Membership[]
+  content     ContentItem[]
+  reports     Report[]
+  auditLogs   AuditLog[]
 }
 
 model Membership {
@@ -45,4 +95,109 @@ model Membership {
 
   @@unique([userId, organizationId])
   @@index([organizationId, role])
+}
+
+model ContentItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  authorUserId   String
+  type           ContentType
+  title          String?
+  body           String
+  externalId     String?
+  isHidden       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author         User         @relation("ContentAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+  reports        Report[]
+
+  @@index([organizationId, type, createdAt])
+  @@index([organizationId, externalId])
+  @@index([authorUserId])
+}
+
+model Report {
+  id                  String             @id @default(cuid())
+  organizationId      String
+  contentItemId       String
+  reporterUserId      String
+  assignedModeratorId String?
+  reason              ReportReason
+  status              ReportStatus       @default(OPEN)
+  severity            ReportSeverity     @default(LOW)
+  description         String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  resolvedAt          DateTime?
+  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contentItem         ContentItem        @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  reporter            User               @relation("ReportReporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  assignedModerator   User?              @relation("AssignedModerator", fields: [assignedModeratorId], references: [id], onDelete: SetNull)
+  events              ReportEvent[]
+  internalNotes       InternalNote[]
+  moderationActions   ModerationAction[]
+
+  @@unique([contentItemId, reporterUserId])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, reason])
+  @@index([organizationId, severity])
+  @@index([assignedModeratorId])
+}
+
+model ReportEvent {
+  id          String        @id @default(cuid())
+  reportId    String
+  actorUserId String?
+  fromStatus  ReportStatus?
+  toStatus    ReportStatus
+  message     String?
+  createdAt   DateTime      @default(now())
+  report      Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  actor       User?         @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([reportId, createdAt])
+}
+
+model InternalNote {
+  id          String   @id @default(cuid())
+  reportId    String
+  authorUserId String
+  body        String
+  createdAt   DateTime @default(now())
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, createdAt])
+}
+
+model ModerationAction {
+  id          String               @id @default(cuid())
+  reportId    String
+  actorUserId String
+  actionType  ModerationActionType
+  details     String?
+  createdAt   DateTime             @default(now())
+  report      Report               @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  actor       User                 @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, createdAt])
+  @@index([actorUserId])
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  actorUserId    String
+  action         String
+  entityType     String
+  entityId       String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          User         @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
 }

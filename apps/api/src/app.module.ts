@@ -1,11 +1,14 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { resolve } from "node:path";
+import { AdminModule } from "./admin/admin.module";
 import { AuthModule } from "./auth/auth.module";
+import { ContentModule } from "./content/content.module";
 import { HealthModule } from "./health/health.module";
 import { MembershipsModule } from "./memberships/memberships.module";
 import { OrganizationsModule } from "./organizations/organizations.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { ReportsModule } from "./reports/reports.module";
 import { UsersModule } from "./users/users.module";
 
 const envFilePath = [
@@ -26,7 +29,10 @@ const envFilePath = [
     UsersModule,
     OrganizationsModule,
     MembershipsModule,
-    AuthModule
+    AuthModule,
+    ContentModule,
+    ReportsModule,
+    AdminModule
   ]
 })
 export class AppModule {}
