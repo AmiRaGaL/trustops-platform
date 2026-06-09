@@ -48,3 +48,39 @@ test("apiFetch surfaces API errors", async () => {
     status: 403
   } satisfies Partial<ApiError>);
 });
+
+test("apiFetch does not redirect unauthenticated 401 errors", async () => {
+  let removedToken = false;
+  let redirectedTo = "";
+
+  globalThis.window = {
+    localStorage: {
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: () => {
+        removedToken = true;
+      }
+    },
+    location: {
+      assign: (path: string) => {
+        redirectedTo = path;
+      }
+    }
+  } as Window & typeof globalThis;
+  globalThis.fetch = async () =>
+    Response.json(
+      { message: "Invalid email or password" },
+      { status: 401 }
+    );
+
+  await assert.rejects(
+    () => apiFetch("/auth/login", { method: "POST", auth: false }),
+    {
+      name: "ApiError",
+      message: "Invalid email or password",
+      status: 401
+    } satisfies Partial<ApiError>
+  );
+  assert.equal(removedToken, false);
+  assert.equal(redirectedTo, "");
+});

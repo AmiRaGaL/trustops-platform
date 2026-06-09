@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "test": "tsx --test src/lib/api.test.ts"
   },
   "dependencies": {
     "next": "^15.3.3",

@@ -221,14 +221,14 @@ export default function ReportDetailPage() {
                 <textarea
                   value={note}
                   rows={4}
-                  disabled={isSubmitting || isTerminal}
+                  disabled={isSubmitting}
                   onChange={(event) => setNote(event.target.value)}
                 />
               </label>
               <button
                 className="secondary-button"
                 type="submit"
-                disabled={isSubmitting || isTerminal || !note.trim()}
+                disabled={isSubmitting || !note.trim()}
               >
                 Add note
               </button>

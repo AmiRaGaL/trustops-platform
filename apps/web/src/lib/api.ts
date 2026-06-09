@@ -63,11 +63,12 @@ export async function apiFetch<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
+  const isAuthenticatedRequest = options.auth !== false;
   const headers = new Headers({
     Accept: "application/json"
   });
 
-  const token = options.auth === false ? null : getStoredToken();
+  const token = isAuthenticatedRequest ? getStoredToken() : null;
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -84,7 +85,7 @@ export async function apiFetch<T>(
     body
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && isAuthenticatedRequest) {
     redirectToLogin();
     throw new ApiError("Your session has expired. Please log in again.", 401);
   }

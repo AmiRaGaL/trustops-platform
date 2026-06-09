@@ -45,7 +45,7 @@ export type ContentItem = {
   title: string | null;
   body: string;
   isHidden?: boolean;
-  author?: UserSummary;
+  author: UserSummary;
   createdAt: string;
 };
 
