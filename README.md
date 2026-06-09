@@ -36,10 +36,10 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 The API allows local dashboard origins from:
 
 ```bash
-CORS_ORIGINS=http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005
+WEB_APP_ORIGIN=http://localhost:3001
 ```
 
-Keep `NEXT_PUBLIC_API_URL` pointed at the API origin, and include the running web origin in `CORS_ORIGINS` so browser preflight requests can complete.
+Keep `NEXT_PUBLIC_API_URL` pointed at the API origin, and set `WEB_APP_ORIGIN` to the running web origin so browser preflight requests can complete.
 
 ## Development
 
@@ -80,6 +80,22 @@ npm run lint -w apps/web
 npm run test -w apps/web
 npm run build -w apps/web
 ```
+
+## Deployment
+
+TrustOps deploys with the existing stack only:
+
+- Web dashboard: Vercel
+- Backend API: Render
+- Database: Supabase Postgres
+
+Live web demo: TBD
+
+Live API health check: TBD
+
+Demo credentials are seeded into the Supabase-backed demo database and should use synthetic data only.
+
+Deployment setup, environment variables, migrations, seed instructions, verification steps, and troubleshooting are documented in [docs/deployment.md](docs/deployment.md).
 
 ## Phase 1 Endpoints
 
