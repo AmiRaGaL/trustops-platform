@@ -6,9 +6,9 @@ TrustOps deploys as a simple monorepo stack:
 - Backend API: Render
 - Database: Supabase Postgres
 
-Live web demo: TBD
+Live web demo: [https://trustops-platform-web.vercel.app/](https://trustops-platform-web.vercel.app/)
 
-Live API health check: TBD
+Live API health check: [https://trustops-api.onrender.com/health](https://trustops-api.onrender.com/health)
 
 Demo credentials are seeded into the Supabase-backed demo database and should use synthetic data only.
 
