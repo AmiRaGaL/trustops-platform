@@ -5,6 +5,7 @@ import { HealthController } from "../src/health/health.controller";
 import { AuthController } from "../src/auth/auth.controller";
 import { AuthService } from "../src/auth/auth.service";
 import { RegisterDto } from "../src/auth/dto/register.dto";
+import { getRequiredConfig } from "../src/config/required-config";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { UsersService } from "../src/users/users.service";
 
@@ -313,5 +314,18 @@ describe("RegisterDto validation", () => {
         ])
       }
     });
+  });
+});
+
+describe("required config", () => {
+  it("rejects a missing JWT_SECRET", () => {
+    expect(() =>
+      getRequiredConfig(
+        {
+          get: () => undefined
+        } as never,
+        "JWT_SECRET"
+      )
+    ).toThrow("JWT_SECRET is required");
   });
 });
