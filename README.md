@@ -20,12 +20,7 @@ npm run db:migrate -w apps/api
 npm run db:seed -w apps/api
 ```
 
-The seed creates demo users with the password `Password123!`, plus sample content and reports for moderation testing:
-
-- `owner@trustops.dev`
-- `admin@trustops.dev`
-- `mod@trustops.dev`
-- `viewer@trustops.dev`
+The seed creates demo users with the password `Password123!`, plus sample content and reports for moderation testing.
 
 ## Development
 
@@ -66,6 +61,27 @@ npm run build -w apps/api
 
 ## Phase 2 Endpoints
 
+TrustOps now supports a complete moderation workflow:
+
+1. Users can report content.
+2. Moderators can view reports in a queue.
+3. Moderators can assign reports.
+4. Moderators can add internal notes.
+5. Moderators can take moderation actions.
+6. Report status changes are recorded as events.
+7. Moderator/admin actions are stored in audit logs.
+
+### Demo Users
+
+| Role | Email | Password |
+|---|---|---|
+| Owner | `owner@trustops.dev` | `Password123!` |
+| Admin | `admin@trustops.dev` | `Password123!` |
+| Moderator | `mod@trustops.dev` | `Password123!` |
+| Viewer | `viewer@trustops.dev` | `Password123!` |
+| User | `user1@trustops.dev` | `Password123!` |
+| User | `user2@trustops.dev` | `Password123!` |
+
 User-facing:
 
 - `GET /content`
@@ -85,11 +101,78 @@ Moderator/admin:
 
 The admin report queue supports cursor pagination with `cursor`, plus `status`, `reason`, `severity`, and `assignedModeratorId` filters. Admin endpoints require an authenticated user with `OWNER`, `ADMIN`, or `MODERATOR` membership in the report organization.
 
-Example moderation action:
+### Example cURL Commands
+
+Authenticate as a demo user:
+
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user1@trustops.dev",
+    "password": "Password123!"
+  }'
+```
+
+Authenticate as a moderator:
+
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "mod@trustops.dev",
+    "password": "Password123!"
+  }'
+```
+
+Create a report:
+
+```bash
+curl -X POST http://localhost:3000/reports \
+  -H "Authorization: Bearer <user-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contentItemId": "<content-item-id>",
+    "reason": "SPAM",
+    "severity": "MEDIUM",
+    "description": "This looks like repeated promotional content."
+  }'
+```
+
+View the moderator queue:
+
+```bash
+curl "http://localhost:3000/admin/reports?status=OPEN" \
+  -H "Authorization: Bearer <moderator-access-token>"
+```
+
+Assign a report:
+
+```bash
+curl -X POST http://localhost:3000/admin/reports/<report-id>/assign \
+  -H "Authorization: Bearer <moderator-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "moderatorUserId": "<moderator-user-id>"
+  }'
+```
+
+Add an internal note:
+
+```bash
+curl -X POST http://localhost:3000/admin/reports/<report-id>/notes \
+  -H "Authorization: Bearer <moderator-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "body": "Reviewing this report against the spam policy."
+  }'
+```
+
+Take a moderation action:
 
 ```bash
 curl -X POST http://localhost:3000/admin/reports/<report-id>/actions \
-  -H "Authorization: Bearer <access-token>" \
+  -H "Authorization: Bearer <moderator-access-token>" \
   -H "Content-Type: application/json" \
   -d '{
     "actionType": "HIDE_CONTENT",
@@ -109,4 +192,11 @@ The returned report includes moderation actions using the same `reason` field:
     }
   ]
 }
+```
+
+View audit logs:
+
+```bash
+curl "http://localhost:3000/admin/audit-logs" \
+  -H "Authorization: Bearer <moderator-access-token>"
 ```

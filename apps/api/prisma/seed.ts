@@ -30,6 +30,16 @@ const demoUsers = [
     email: "viewer@trustops.dev",
     name: "TrustOps Viewer",
     role: Role.VIEWER
+  },
+  {
+    email: "user1@trustops.dev",
+    name: "TrustOps User One",
+    role: Role.VIEWER
+  },
+  {
+    email: "user2@trustops.dev",
+    name: "TrustOps User Two",
+    role: Role.VIEWER
   }
 ] as const;
 
