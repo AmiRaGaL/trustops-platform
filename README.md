@@ -33,6 +33,14 @@ The seed creates demo users with the password `Password123!`, plus sample conten
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
+The API allows local dashboard origins from:
+
+```bash
+CORS_ORIGINS=http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005
+```
+
+Keep `NEXT_PUBLIC_API_URL` pointed at the API origin, and include the running web origin in `CORS_ORIGINS` so browser preflight requests can complete.
+
 ## Development
 
 ```bash
