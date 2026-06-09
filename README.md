@@ -4,6 +4,8 @@ TrustOps Platform is a portfolio-grade multi-tenant trust and safety operations 
 
 Phase 2 adds the core moderation workflow: content items, user reports, moderator queues, assignments, status transitions, internal notes, moderation actions, and audit logs.
 
+Phase 3 adds a Next.js admin dashboard for moderators, admins, and owners to review reports and audit activity.
+
 ## Prerequisites
 
 - Node.js 20+
@@ -14,6 +16,7 @@ Phase 2 adds the core moderation workflow: content items, user reports, moderato
 ```bash
 npm install
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
 docker compose up -d
 npm run db:generate -w apps/api
 npm run db:migrate -w apps/api
@@ -22,13 +25,37 @@ npm run db:seed -w apps/api
 
 The seed creates demo users with the password `Password123!`, plus sample content and reports for moderation testing.
 
+### Web Environment
+
+`apps/web` reads the API URL from:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+The API allows local dashboard origins from:
+
+```bash
+CORS_ORIGINS=http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005
+```
+
+Keep `NEXT_PUBLIC_API_URL` pointed at the API origin, and include the running web origin in `CORS_ORIGINS` so browser preflight requests can complete.
+
 ## Development
 
 ```bash
 npm run dev -w apps/api
+npm run dev -w apps/web
 ```
 
 The API listens on `http://localhost:3000` by default.
+The web dashboard listens on `http://localhost:3001` if port `3000` is already in use by the API.
+
+To run both workspaces together:
+
+```bash
+npm run dev
+```
 
 ## Validation
 
@@ -41,8 +68,17 @@ npm run build
 API workspace commands:
 
 ```bash
+npm run lint -w apps/api
 npm run test -w apps/api
 npm run build -w apps/api
+```
+
+Web workspace commands:
+
+```bash
+npm run lint -w apps/web
+npm run test -w apps/web
+npm run build -w apps/web
 ```
 
 ## Phase 1 Endpoints
@@ -100,6 +136,38 @@ Moderator/admin:
 - `GET /admin/audit-logs`
 
 The admin report queue supports cursor pagination with `cursor`, plus `status`, `reason`, `severity`, and `assignedModeratorId` filters. Admin endpoints require an authenticated user with `OWNER`, `ADMIN`, or `MODERATOR` membership in the report organization.
+
+## Phase 3 Dashboard
+
+The admin dashboard is a Next.js app under `apps/web`.
+
+Routes:
+
+- `/login` - local/demo login using `POST /auth/login`
+- `/dashboard` - moderation overview and recent report metrics
+- `/reports` - moderator queue with filters and cursor pagination
+- `/reports/[id]` - report detail, assignment, internal notes, moderation actions, escalation, events, and action history
+- `/audit-logs` - audit log viewer
+
+Demo login credentials:
+
+| Role | Email | Password |
+|---|---|---|
+| Moderator | `mod@trustops.dev` | `Password123!` |
+| Admin | `admin@trustops.dev` | `Password123!` |
+| Owner | `owner@trustops.dev` | `Password123!` |
+
+These credentials are for local seed data only.
+
+### Phase 3 Screenshots
+
+Add screenshots here after running the dashboard locally:
+
+- Login page
+- Dashboard overview
+- Report queue
+- Report detail
+- Audit logs
 
 ### Example cURL Commands
 

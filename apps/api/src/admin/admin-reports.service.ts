@@ -350,7 +350,17 @@ export class AdminReportsService {
 
   private reportIncludes() {
     return {
-      contentItem: true,
+      contentItem: {
+        include: {
+          author: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        }
+      },
       reporter: {
         select: {
           id: true,
