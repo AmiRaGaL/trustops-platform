@@ -10,6 +10,21 @@ Multi-tenant trust and safety operations platform for reviewing user reports, as
 
 > Portfolio project disclaimer: TrustOps is a recruiter-facing engineering project, not a production moderation vendor. It demonstrates backend and full-stack architecture patterns with realistic trust and safety workflows, but it intentionally omits production hardening such as managed deployment, ML classifiers, webhooks, and OpenTelemetry.
 
+## Live Demo
+
+- Web dashboard: [trustops-platform-web.vercel.app](https://trustops-platform-web.vercel.app/)
+- API health check: [trustops-api.onrender.com/health](https://trustops-api.onrender.com/health)
+- Demo login: `mod@trustops.dev` / `Password123!`
+
+What to review:
+
+- Multi-tenant RBAC
+- Moderation queue
+- Report detail workflow
+- Internal notes and actions
+- Audit logs
+- Deployed full-stack architecture
+
 ## What Is TrustOps?
 
 TrustOps is a compact moderation operations system. Users can report content, moderators can review a queue, admins can assign and resolve reports, and every important moderation event is written to an audit trail.
@@ -215,9 +230,9 @@ TrustOps deploys with the existing stack only:
 - Backend API: Render
 - Database: Supabase Postgres
 
-Live web demo: TBD
+Live web demo: [https://trustops-platform-web.vercel.app/](https://trustops-platform-web.vercel.app/)
 
-Live API health check: TBD
+Live API health check: [https://trustops-api.onrender.com/health](https://trustops-api.onrender.com/health)
 
 Demo credentials are seeded into the Supabase-backed demo database and should use synthetic data only.
 

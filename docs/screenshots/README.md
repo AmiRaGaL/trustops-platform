@@ -4,7 +4,13 @@ This folder is reserved for recruiter-facing dashboard screenshots. If screensho
 
 ## Setup
 
-Start the API and web dashboard:
+Capture final portfolio screenshots from the live Vercel deployment:
+
+```text
+https://trustops-platform-web.vercel.app/
+```
+
+For local-only screenshot refreshes, start the API and web dashboard:
 
 ```bash
 npm run dev -w apps/api
