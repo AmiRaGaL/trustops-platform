@@ -3,36 +3,21 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 
-const DEFAULT_CORS_ORIGINS = [
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://localhost:3003",
-  "http://localhost:3004",
-  "http://localhost:3005"
-];
+const DEFAULT_WEB_APP_ORIGIN = "http://localhost:3001";
 
-function parseCorsOrigins(value: string | undefined): string[] {
-  if (!value) {
-    return DEFAULT_CORS_ORIGINS;
-  }
-
-  const origins = value
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  return origins.length > 0 ? origins : DEFAULT_CORS_ORIGINS;
+function getWebAppOrigin(value: string | undefined): string {
+  return value?.trim() || DEFAULT_WEB_APP_ORIGIN;
 }
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  const corsOrigins = parseCorsOrigins(
-    configService.get<string>("CORS_ORIGINS")
+  const webAppOrigin = getWebAppOrigin(
+    configService.get<string>("WEB_APP_ORIGIN")
   );
 
   app.enableCors({
-    origin: corsOrigins,
+    origin: webAppOrigin,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: false

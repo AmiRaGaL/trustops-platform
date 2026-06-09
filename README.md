@@ -128,7 +128,9 @@ Default local URLs:
 - API: `http://localhost:3000`
 - Web dashboard: `http://localhost:3001` when the API is already using port `3000`
 
-The web app reads `NEXT_PUBLIC_API_URL` from `apps/web/.env.local`. The API allows local dashboard origins through `CORS_ORIGINS` in `apps/api/.env`.
+The seed creates demo users with the password `Password123!`, plus sample content and reports for moderation testing.
+
+The web app reads `NEXT_PUBLIC_API_URL` from `apps/web/.env.local`. The API allows the local dashboard origin through `WEB_APP_ORIGIN` in `apps/api/.env`.
 
 ## Demo Credentials
 
@@ -204,6 +206,22 @@ npm run lint -w apps/web
 npm run test -w apps/web
 npm run build -w apps/web
 ```
+
+## Deployment
+
+TrustOps deploys with the existing stack only:
+
+- Web dashboard: Vercel
+- Backend API: Render
+- Database: Supabase Postgres
+
+Live web demo: TBD
+
+Live API health check: TBD
+
+Demo credentials are seeded into the Supabase-backed demo database and should use synthetic data only.
+
+Deployment setup, environment variables, migrations, seed instructions, verification steps, and troubleshooting are documented in [docs/deployment.md](docs/deployment.md).
 
 ## Project Structure
 
