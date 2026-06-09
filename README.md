@@ -1,17 +1,110 @@
-# trustops-platform
+# TrustOps Platform
 
-TrustOps Platform is a portfolio-grade multi-tenant trust and safety operations platform. The API foundation includes NestJS, PostgreSQL, Prisma, Redis via Docker Compose, authentication, users, organizations, memberships, seed data, tests, and CI.
+[![CI](https://github.com/AmiRaGaL/trustops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AmiRaGaL/trustops-platform/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-10.x-e0234e?logo=nestjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15.x-000000?logo=nextdotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1?logo=postgresql&logoColor=white)
 
-Phase 2 adds the core moderation workflow: content items, user reports, moderator queues, assignments, status transitions, internal notes, moderation actions, and audit logs.
+Multi-tenant trust and safety operations platform for reviewing user reports, assigning moderator work, recording decisions, and preserving audit trails.
 
-Phase 3 adds a Next.js admin dashboard for moderators, admins, and owners to review reports and audit activity.
+> Portfolio project disclaimer: TrustOps is a recruiter-facing engineering project, not a production moderation vendor. It demonstrates backend and full-stack architecture patterns with realistic trust and safety workflows, but it intentionally omits production hardening such as managed deployment, ML classifiers, webhooks, and OpenTelemetry.
 
-## Prerequisites
+## What Is TrustOps?
+
+TrustOps is a compact moderation operations system. Users can report content, moderators can review a queue, admins can assign and resolve reports, and every important moderation event is written to an audit trail.
+
+The goal is to show how a production-style internal platform can be designed with clear domain boundaries, tenant scoping, RBAC, validated APIs, relational modeling, and a usable admin dashboard.
+
+## Why This Exists
+
+This repository is built as a portfolio-grade full-stack project. It is meant to be read by engineers and interviewers who want to evaluate practical system design decisions, not just UI polish.
+
+TrustOps demonstrates:
+
+- How to model multi-tenant trust and safety data in PostgreSQL.
+- How to keep NestJS controllers thin and move business logic into services.
+- How to enforce organization-scoped moderator access.
+- How to preserve report history through events and audit logs.
+- How to build a Next.js admin dashboard against a typed API client.
+- How to keep a demo easy to run locally with seed data and credentials.
+
+## Core Features
+
+- Email/password authentication with hashed passwords and JWT access tokens.
+- Users, organizations, memberships, and roles.
+- Organization-scoped RBAC for owner, admin, moderator, and viewer roles.
+- Content listing and content detail endpoints.
+- User report creation and "my reports" lookup.
+- Moderator report queue with cursor pagination and filters.
+- Report detail view with content, reporter, assignee, events, notes, and action history.
+- Assignment flow that moves open reports into review.
+- Internal notes for moderator-only context.
+- Moderation actions including hide content, warn, suspend, dismiss, escalate, and no action.
+- Audit log viewer for moderator/admin activity.
+- Next.js admin dashboard for login, overview, queue, report detail, and audit logs.
+- Docker Compose dependencies for PostgreSQL and Redis.
+- CI-backed API and web lint/test/build checks.
+
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| API | NestJS, TypeScript, class-validator |
+| Database | PostgreSQL, Prisma ORM and migrations |
+| Auth | JWT, Passport, bcryptjs |
+| Frontend | Next.js App Router, React, TypeScript |
+| Local infrastructure | Docker Compose, Redis, PostgreSQL |
+| Testing / CI | Jest, Node test runner, ESLint, GitHub Actions for API and web validation |
+
+## Architecture Overview
+
+TrustOps is a two-app workspace:
+
+- `apps/api`: NestJS API with modules for auth, users, organizations, memberships, content, reports, admin moderation, audit logs, health, and Prisma.
+- `apps/web`: Next.js admin dashboard that authenticates through the API and stores the local demo token in browser storage.
+
+```mermaid
+flowchart LR
+  User["Moderator / admin"] --> Web["Next.js admin dashboard"]
+  Web --> API["NestJS API"]
+  API --> Auth["Auth + RBAC services"]
+  API --> Prisma["Prisma client"]
+  Prisma --> Postgres[("PostgreSQL")]
+  API -. future async dependency .-> Redis[("Redis")]
+```
+
+More detail:
+
+- [Architecture docs](docs/architecture.md)
+- [Database docs](docs/database.md)
+- [API docs](docs/api.md)
+- [Demo script](docs/demo-script.md)
+- [Screenshot guide](docs/screenshots/README.md)
+- [Decision records](docs/decisions)
+
+## Screenshots
+
+Screenshot capture instructions and expected views are in [docs/screenshots/README.md](docs/screenshots/README.md).
+
+Suggested screenshot filenames:
+
+- `docs/screenshots/login.png`
+- `docs/screenshots/dashboard.png`
+- `docs/screenshots/report-queue.png`
+- `docs/screenshots/report-detail.png`
+- `docs/screenshots/internal-note-panel.png`
+- `docs/screenshots/moderation-action-panel.png`
+- `docs/screenshots/audit-logs.png`
+
+## Local Setup
+
+Prerequisites:
 
 - Node.js 20+
 - Docker and Docker Compose
 
-## Setup
+Install dependencies and prepare local configuration:
 
 ```bash
 npm install
@@ -23,49 +116,80 @@ npm run db:migrate -w apps/api
 npm run db:seed -w apps/api
 ```
 
-The seed creates demo users with the password `Password123!`, plus sample content and reports for moderation testing.
-
-### Web Environment
-
-`apps/web` reads the API URL from:
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:3000
-```
-
-The API allows local dashboard origins from:
-
-```bash
-CORS_ORIGINS=http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005
-```
-
-Keep `NEXT_PUBLIC_API_URL` pointed at the API origin, and include the running web origin in `CORS_ORIGINS` so browser preflight requests can complete.
-
-## Development
+Run the apps:
 
 ```bash
 npm run dev -w apps/api
 npm run dev -w apps/web
 ```
 
-The API listens on `http://localhost:3000` by default.
-The web dashboard listens on `http://localhost:3001` if port `3000` is already in use by the API.
+Default local URLs:
 
-To run both workspaces together:
+- API: `http://localhost:3000`
+- Web dashboard: `http://localhost:3001` when the API is already using port `3000`
 
-```bash
-npm run dev
+The web app reads `NEXT_PUBLIC_API_URL` from `apps/web/.env.local`. The API allows local dashboard origins through `CORS_ORIGINS` in `apps/api/.env`.
+
+## Demo Credentials
+
+The seed script creates local demo users with the password `Password123!`.
+
+| Role | Email |
+| --- | --- |
+| Owner | `owner@trustops.dev` |
+| Admin | `admin@trustops.dev` |
+| Moderator | `mod@trustops.dev` |
+| Viewer | `viewer@trustops.dev` |
+| Demo user | `user1@trustops.dev` |
+| Demo user | `user2@trustops.dev` |
+
+Recommended dashboard login:
+
+```text
+Email: mod@trustops.dev
+Password: Password123!
 ```
 
-## Validation
+These credentials are for local seed data only.
+
+## API Overview
+
+Primary endpoints:
+
+| Area | Endpoints |
+| --- | --- |
+| Health | `GET /health` |
+| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
+| Users | `GET /users/:id` |
+| Organizations | `POST /organizations`, `GET /organizations`, `GET /organizations/:id` |
+| Memberships | `POST /memberships`, `GET /memberships/organizations/:organizationId`, `GET /memberships/users/:userId` |
+| Content | `GET /content`, `GET /content/:id` |
+| Reports | `POST /reports`, `GET /reports/my` |
+| Admin reports | `GET /admin/reports`, `GET /admin/reports/:id`, `POST /admin/reports/:id/assign`, `POST /admin/reports/:id/notes`, `POST /admin/reports/:id/actions`, `POST /admin/reports/:id/escalate` |
+| Audit logs | `GET /admin/audit-logs` |
+
+Admin endpoints require:
+
+```http
+Authorization: Bearer <access-token>
+```
+
+See [docs/api.md](docs/api.md) for example curl commands and common error cases.
+
+## Testing Commands
+
+CI runs the API migration, API lint/test/build checks, and web lint/test/build checks from `.github/workflows/ci.yml`.
+
+Workspace validation:
 
 ```bash
+npm install
 npm run lint
 npm run test
 npm run build
 ```
 
-API workspace commands:
+API only:
 
 ```bash
 npm run lint -w apps/api
@@ -73,7 +197,7 @@ npm run test -w apps/api
 npm run build -w apps/api
 ```
 
-Web workspace commands:
+Web only:
 
 ```bash
 npm run lint -w apps/web
@@ -81,190 +205,79 @@ npm run test -w apps/web
 npm run build -w apps/web
 ```
 
-## Phase 1 Endpoints
+## Project Structure
 
-- `GET /health`
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /auth/me`
-- `GET /users/:id`
-- `POST /organizations`
-- `GET /organizations`
-- `GET /organizations/:id`
-- `POST /memberships`
-- `GET /memberships/organizations/:organizationId`
-- `GET /memberships/users/:userId`
-
-## Phase 2 Endpoints
-
-TrustOps now supports a complete moderation workflow:
-
-1. Users can report content.
-2. Moderators can view reports in a queue.
-3. Moderators can assign reports.
-4. Moderators can add internal notes.
-5. Moderators can take moderation actions.
-6. Report status changes are recorded as events.
-7. Moderator/admin actions are stored in audit logs.
-
-### Demo Users
-
-| Role | Email | Password |
-|---|---|---|
-| Owner | `owner@trustops.dev` | `Password123!` |
-| Admin | `admin@trustops.dev` | `Password123!` |
-| Moderator | `mod@trustops.dev` | `Password123!` |
-| Viewer | `viewer@trustops.dev` | `Password123!` |
-| User | `user1@trustops.dev` | `Password123!` |
-| User | `user2@trustops.dev` | `Password123!` |
-
-User-facing:
-
-- `GET /content`
-- `GET /content/:id`
-- `POST /reports`
-- `GET /reports/my`
-
-Moderator/admin:
-
-- `GET /admin/reports`
-- `GET /admin/reports/:id`
-- `POST /admin/reports/:id/assign`
-- `POST /admin/reports/:id/notes`
-- `POST /admin/reports/:id/actions`
-- `POST /admin/reports/:id/escalate`
-- `GET /admin/audit-logs`
-
-The admin report queue supports cursor pagination with `cursor`, plus `status`, `reason`, `severity`, and `assignedModeratorId` filters. Admin endpoints require an authenticated user with `OWNER`, `ADMIN`, or `MODERATOR` membership in the report organization.
-
-## Phase 3 Dashboard
-
-The admin dashboard is a Next.js app under `apps/web`.
-
-Routes:
-
-- `/login` - local/demo login using `POST /auth/login`
-- `/dashboard` - moderation overview and recent report metrics
-- `/reports` - moderator queue with filters and cursor pagination
-- `/reports/[id]` - report detail, assignment, internal notes, moderation actions, escalation, events, and action history
-- `/audit-logs` - audit log viewer
-
-Demo login credentials:
-
-| Role | Email | Password |
-|---|---|---|
-| Moderator | `mod@trustops.dev` | `Password123!` |
-| Admin | `admin@trustops.dev` | `Password123!` |
-| Owner | `owner@trustops.dev` | `Password123!` |
-
-These credentials are for local seed data only.
-
-### Phase 3 Screenshots
-
-Add screenshots here after running the dashboard locally:
-
-- Login page
-- Dashboard overview
-- Report queue
-- Report detail
-- Audit logs
-
-### Example cURL Commands
-
-Authenticate as a demo user:
-
-```bash
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user1@trustops.dev",
-    "password": "Password123!"
-  }'
+```text
+trustops-platform/
+  apps/
+    api/                 NestJS API workspace
+      prisma/            Prisma schema, migrations, seed data
+      src/
+        admin/           Moderator report and audit log endpoints
+        audit-logs/      Audit log query service
+        auth/            Login, registration, JWT strategy
+        content/         Content listing endpoints
+        memberships/     Organization membership APIs
+        moderation/      Moderator access checks
+        organizations/   Organization APIs
+        reports/         User report APIs
+        users/           User lookup APIs
+    web/                 Next.js admin dashboard
+      src/app/           App Router pages
+      src/components/    Shared dashboard components
+      src/lib/           API client, auth storage, types
+  docs/                  Portfolio docs, diagrams, demo guide, decisions
+  docker-compose.yml     Local PostgreSQL and Redis dependencies
 ```
 
-Authenticate as a moderator:
+## Security Notes
 
-```bash
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "mod@trustops.dev",
-    "password": "Password123!"
-  }'
+- Passwords are hashed with bcryptjs before storage.
+- JWT secrets are read from environment variables.
+- `.env.example` files document required configuration without committing secrets.
+- Request DTOs use class-validator for incoming body/query validation.
+- Moderator/admin APIs check organization membership before returning or mutating report data.
+- Audit logs record actor, organization, action, entity, metadata, and timestamp.
+- This demo does not implement production session management, rate limiting, SSO, tenant provisioning, object storage, or external policy integrations.
+
+## Known Limitations
+
+- Portfolio project only; not a production vendor or hosted service.
+- No ML classifier or automated policy scoring.
+- No webhook delivery or third-party case management integrations.
+- No OpenTelemetry instrumentation yet.
+- Redis is included as a local dependency, but this phase focuses on synchronous moderation workflows.
+- Demo seed data is small by design.
+- No production deployment manifest is included.
+
+## Roadmap
+
+- Add production-grade deployment documentation.
+- Add OpenTelemetry tracing and structured operational dashboards.
+- Add background jobs for notifications and export tasks.
+- Add richer audit log retention controls.
+- Add policy taxonomy and configurable queues.
+- Add end-to-end browser tests for the dashboard demo path.
+
+## Recruiter / Interviewer Talking Points
+
+- The API uses modular NestJS boundaries so controllers stay thin and services own business rules.
+- The Prisma schema shows tenant-aware relational modeling with indexes for queue and audit access patterns.
+- RBAC is organization-scoped, which matters more than global roles in multi-tenant operations software.
+- Report events preserve lifecycle history, while audit logs preserve actor accountability.
+- The dashboard is intentionally practical: login, queue, detail workflow, actions, and audit review.
+- The project avoids premature ML and integration work so the core workflow remains explainable and testable.
+
+## GitHub Presentation Suggestions
+
+Repository description:
+
+```text
+Portfolio-grade multi-tenant trust and safety operations platform built with NestJS, Prisma, PostgreSQL, and Next.js.
 ```
 
-Create a report:
+Suggested topics:
 
-```bash
-curl -X POST http://localhost:3000/reports \
-  -H "Authorization: Bearer <user-access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "contentItemId": "<content-item-id>",
-    "reason": "SPAM",
-    "severity": "MEDIUM",
-    "description": "This looks like repeated promotional content."
-  }'
-```
-
-View the moderator queue:
-
-```bash
-curl "http://localhost:3000/admin/reports?status=OPEN" \
-  -H "Authorization: Bearer <moderator-access-token>"
-```
-
-Assign a report:
-
-```bash
-curl -X POST http://localhost:3000/admin/reports/<report-id>/assign \
-  -H "Authorization: Bearer <moderator-access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "moderatorUserId": "<moderator-user-id>"
-  }'
-```
-
-Add an internal note:
-
-```bash
-curl -X POST http://localhost:3000/admin/reports/<report-id>/notes \
-  -H "Authorization: Bearer <moderator-access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "body": "Reviewing this report against the spam policy."
-  }'
-```
-
-Take a moderation action:
-
-```bash
-curl -X POST http://localhost:3000/admin/reports/<report-id>/actions \
-  -H "Authorization: Bearer <moderator-access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "actionType": "HIDE_CONTENT",
-    "reason": "Confirmed spam content."
-  }'
-```
-
-The returned report includes moderation actions using the same `reason` field:
-
-```json
-{
-  "status": "RESOLVED",
-  "moderationActions": [
-    {
-      "actionType": "HIDE_CONTENT",
-      "reason": "Confirmed spam content."
-    }
-  ]
-}
-```
-
-View audit logs:
-
-```bash
-curl "http://localhost:3000/admin/audit-logs" \
-  -H "Authorization: Bearer <moderator-access-token>"
+```text
+trust-and-safety, moderation, nestjs, nextjs, prisma, postgresql, typescript, rbac, audit-logs, portfolio-project
 ```

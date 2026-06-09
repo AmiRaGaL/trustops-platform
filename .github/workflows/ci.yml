@@ -54,3 +54,9 @@ jobs:
       - run: npm run test -w apps/api
 
       - run: npm run build -w apps/api
+
+      - run: npm run lint -w apps/web
+
+      - run: npm run test -w apps/web
+
+      - run: npm run build -w apps/web
