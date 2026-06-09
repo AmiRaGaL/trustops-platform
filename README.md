@@ -44,7 +44,7 @@ TrustOps demonstrates:
 - Audit log viewer for moderator/admin activity.
 - Next.js admin dashboard for login, overview, queue, report detail, and audit logs.
 - Docker Compose dependencies for PostgreSQL and Redis.
-- CI-backed lint, test, and build checks.
+- CI-backed API and web lint/test/build checks.
 
 ## Tech Stack
 
@@ -55,7 +55,7 @@ TrustOps demonstrates:
 | Auth | JWT, Passport, bcryptjs |
 | Frontend | Next.js App Router, React, TypeScript |
 | Local infrastructure | Docker Compose, Redis, PostgreSQL |
-| Testing / CI | Jest, Node test runner, ESLint, GitHub Actions |
+| Testing / CI | Jest, Node test runner, ESLint, GitHub Actions for API and web validation |
 
 ## Architecture Overview
 
@@ -177,6 +177,8 @@ Authorization: Bearer <access-token>
 See [docs/api.md](docs/api.md) for example curl commands and common error cases.
 
 ## Testing Commands
+
+CI runs the API migration, API lint/test/build checks, and web lint/test/build checks from `.github/workflows/ci.yml`.
 
 Workspace validation:
 

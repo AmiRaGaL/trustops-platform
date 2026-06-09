@@ -30,7 +30,7 @@ Recommended capture size: desktop browser at `1440x1000`. Keep seeded data visib
 | Report detail | `/reports/:id` | `report-detail.png` | Show content context, reporter, assignee, status, and event history. |
 | Internal note panel | `/reports/:id` | `internal-note-panel.png` | Open a report and capture the note form plus existing notes. |
 | Moderation action panel | `/reports/:id` | `moderation-action-panel.png` | Capture the action selector and reason field before submission. |
-| Audit logs page | `/audit-logs` | `audit-logs.png` | Show actor, action, entity, organization, metadata, and timestamps. |
+| Audit logs page | `/audit-logs` | `audit-logs.png` | Show action, actor, entity, entity ID, created timestamp, and metadata. |
 
 ## Placeholder Policy
 
