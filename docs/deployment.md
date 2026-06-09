@@ -35,8 +35,7 @@ Create a Render Web Service for the API from the repository.
 If the Render service root directory is the repository root, use these commands:
 
 ```bash
-npm install
-npm run build -w apps/api
+npm install && npm run db:generate -w apps/api && npm run db:deploy -w apps/api && npm run build -w apps/api
 ```
 
 ```bash
