@@ -188,14 +188,14 @@ model ModerationAction {
 model AuditLog {
   id             String       @id @default(cuid())
   organizationId String
-  actorUserId    String
+  actorUserId    String?
   action         String
   entityType     String
   entityId       String
   metadata       Json?
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  actor          User         @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+  actor          User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
   @@index([actorUserId])

@@ -22,7 +22,17 @@ const envFilePath = [
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath
+      envFilePath,
+      validate: (config: Record<string, unknown>) => {
+        if (
+          typeof config.JWT_SECRET !== "string" ||
+          config.JWT_SECRET.trim().length === 0
+        ) {
+          throw new Error("JWT_SECRET is required");
+        }
+
+        return config;
+      }
     }),
     PrismaModule,
     HealthModule,

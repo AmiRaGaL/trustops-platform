@@ -30,6 +30,24 @@ export class ReportsService {
       throw new ForbiddenException("Users cannot report their own content");
     }
 
+    const membership = await this.prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: contentItem.organizationId
+        }
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!membership) {
+      throw new ForbiddenException(
+        "Users can only report content in organizations they belong to"
+      );
+    }
+
     try {
       return await this.prisma.$transaction(async (prisma) => {
         const report = await prisma.report.create({

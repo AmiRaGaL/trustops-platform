@@ -6,6 +6,7 @@ import { UsersModule } from "../users/users.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { getRequiredConfig } from "../config/required-config";
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>("JWT_SECRET") ?? "dev-only-secret",
+        secret: getRequiredConfig(configService, "JWT_SECRET"),
         signOptions: {
           expiresIn: configService.get<string>("JWT_EXPIRES_IN", "1h")
         }

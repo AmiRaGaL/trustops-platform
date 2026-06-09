@@ -79,7 +79,7 @@ type StoredModerationAction = {
 type StoredAuditLog = {
   id: string;
   organizationId: string;
-  actorUserId: string;
+  actorUserId: string | null;
   action: string;
   entityType: string;
   entityId: string;
@@ -112,6 +112,12 @@ class ModerationPrisma {
       userId: "reporter-1",
       organizationId: "organization-1",
       role: Role.VIEWER
+    },
+    {
+      id: "membership-other-tenant",
+      userId: "other-tenant-user-1",
+      organizationId: "organization-2",
+      role: Role.VIEWER
     }
   ];
 
@@ -123,6 +129,18 @@ class ModerationPrisma {
       type: ContentType.POST,
       title: "Reported post",
       body: "A post that can be reported",
+      externalId: null,
+      isHidden: false,
+      createdAt: new Date("2026-06-08T00:00:00.000Z"),
+      updatedAt: new Date("2026-06-08T00:00:00.000Z")
+    },
+    {
+      id: "content-2",
+      organizationId: "organization-2",
+      authorUserId: "other-tenant-user-1",
+      type: ContentType.POST,
+      title: "Other tenant post",
+      body: "A post from another tenant",
       externalId: null,
       isHidden: false,
       createdAt: new Date("2026-06-08T00:00:00.000Z"),
@@ -172,7 +190,27 @@ class ModerationPrisma {
           (!where.role || where.role.in.includes(storedMembership.role))
       );
 
-      return membership ? { id: membership.id } : null;
+      return membership ? { id: membership.id, role: membership.role } : null;
+    },
+    findUnique: async ({
+      where
+    }: {
+      where: {
+        userId_organizationId: {
+          userId: string;
+          organizationId: string;
+        };
+      };
+      select?: { id?: boolean; role?: boolean };
+    }) => {
+      const membership = this.memberships.find(
+        (storedMembership) =>
+          storedMembership.userId === where.userId_organizationId.userId &&
+          storedMembership.organizationId ===
+            where.userId_organizationId.organizationId
+      );
+
+      return membership ? { id: membership.id, role: membership.role } : null;
     }
   };
 
@@ -483,6 +521,19 @@ describe("Core moderation workflow", () => {
     ).rejects.toThrow("Users cannot report their own content");
   });
 
+  it("prevents users from reporting content in another tenant", async () => {
+    const { reportsService } = createServices();
+
+    await expect(
+      reportsService.create("reporter-1", {
+        contentItemId: "content-2",
+        reason: ReportReason.SPAM
+      })
+    ).rejects.toThrow(
+      "Users can only report content in organizations they belong to"
+    );
+  });
+
   it("blocks viewers from the moderator queue", async () => {
     const { adminReportsService } = createServices();
 
@@ -616,6 +667,93 @@ describe("Core moderation workflow", () => {
         })
       ])
     );
+  });
+
+  it("allows escalation from a non-terminal report", async () => {
+    const { prisma, reportsService, adminReportsService } = createServices();
+    const report = await reportsService.create("reporter-1", {
+      contentItemId: "content-1",
+      reason: ReportReason.HATE_SPEECH
+    });
+
+    const escalatedReport = await adminReportsService.takeAction(
+      "moderator-1",
+      report.id,
+      {
+        actionType: ModerationActionType.ESCALATE_REPORT,
+        reason: "Needs owner review."
+      }
+    );
+
+    expect(escalatedReport).toMatchObject({
+      id: report.id,
+      status: ReportStatus.ESCALATED,
+      resolvedAt: null
+    });
+    expect(prisma.reportEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fromStatus: ReportStatus.OPEN,
+          toStatus: ReportStatus.ESCALATED
+        })
+      ])
+    );
+  });
+
+  it("rejects new actions on terminal reports without clearing resolvedAt", async () => {
+    const { prisma, reportsService, adminReportsService } = createServices();
+    const report = await reportsService.create("reporter-1", {
+      contentItemId: "content-1",
+      reason: ReportReason.VIOLENCE
+    });
+
+    const resolvedReport = await adminReportsService.takeAction(
+      "moderator-1",
+      report.id,
+      {
+        actionType: ModerationActionType.WARN_USER,
+        reason: "Warned the author."
+      }
+    );
+    const resolvedAt = resolvedReport.resolvedAt;
+    const actionCount = prisma.moderationActions.length;
+    const eventCount = prisma.reportEvents.length;
+    const auditLogCount = prisma.auditLogs.length;
+
+    await expect(
+      adminReportsService.takeAction("moderator-1", report.id, {
+        actionType: ModerationActionType.ESCALATE_REPORT,
+        reason: "Should not reopen terminal report."
+      })
+    ).rejects.toThrow("Terminal reports cannot receive new actions");
+
+    expect(prisma.moderationActions).toHaveLength(actionCount);
+    expect(prisma.reportEvents).toHaveLength(eventCount);
+    expect(prisma.auditLogs).toHaveLength(auditLogCount);
+    expect(prisma.reports[0]).toMatchObject({
+      status: ReportStatus.RESOLVED,
+      resolvedAt
+    });
+  });
+
+  it("rejects new actions on dismissed reports", async () => {
+    const { reportsService, adminReportsService } = createServices();
+    const report = await reportsService.create("reporter-1", {
+      contentItemId: "content-1",
+      reason: ReportReason.OTHER
+    });
+
+    await adminReportsService.takeAction("moderator-1", report.id, {
+      actionType: ModerationActionType.NO_ACTION,
+      reason: "No violation found."
+    });
+
+    await expect(
+      adminReportsService.takeAction("moderator-1", report.id, {
+        actionType: ModerationActionType.HIDE_CONTENT,
+        reason: "Too late."
+      })
+    ).rejects.toThrow("Terminal reports cannot receive new actions");
   });
 
   it("lists audit logs for moderator-accessible organizations", async () => {

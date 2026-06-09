@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException
@@ -186,6 +187,7 @@ export class AdminReportsService {
       actorUserId,
       report.organizationId
     );
+    this.assertCanTakeAction(report.status);
 
     return this.prisma.$transaction(async (prisma) => {
       const action = await prisma.moderationAction.create({
@@ -294,6 +296,12 @@ export class AdminReportsService {
 
   private isTerminalStatus(status: ReportStatus): boolean {
     return status === ReportStatus.RESOLVED || status === ReportStatus.DISMISSED;
+  }
+
+  private assertCanTakeAction(status: ReportStatus): void {
+    if (this.isTerminalStatus(status)) {
+      throw new ConflictException("Terminal reports cannot receive new actions");
+    }
   }
 
   private createReportEvent(

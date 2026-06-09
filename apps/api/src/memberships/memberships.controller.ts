@@ -1,4 +1,7 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { JwtUser } from "../auth/types";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { CreateMembershipDto } from "./dto/create-membership.dto";
 import { MembershipsService } from "./memberships.service";
 
@@ -7,8 +10,9 @@ export class MembershipsController {
   constructor(private readonly membershipsService: MembershipsService) {}
 
   @Post()
-  create(@Body() dto: CreateMembershipDto) {
-    return this.membershipsService.create(dto);
+  @UseGuards(JwtAuthGuard)
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreateMembershipDto) {
+    return this.membershipsService.create(user.sub, dto);
   }
 
   @Get("organizations/:organizationId")
