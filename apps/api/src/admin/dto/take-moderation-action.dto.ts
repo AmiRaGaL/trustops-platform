@@ -8,10 +8,5 @@ export class TakeModerationActionDto {
   @IsString()
   @MaxLength(2000)
   @IsOptional()
-  details?: string;
-
-  @IsString()
-  @MaxLength(2000)
-  @IsOptional()
   reason?: string;
 }

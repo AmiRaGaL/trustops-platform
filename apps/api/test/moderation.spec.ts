@@ -581,7 +581,7 @@ describe("Core moderation workflow", () => {
         expect.objectContaining({
           reportId: report.id,
           actionType: ModerationActionType.HIDE_CONTENT,
-          details: "Confirmed spam content."
+          reason: "Confirmed spam content."
         })
       ],
       events: expect.arrayContaining([
@@ -598,10 +598,12 @@ describe("Core moderation workflow", () => {
       expect.arrayContaining([
         expect.objectContaining({
           reportId: report.id,
-          actionType: ModerationActionType.HIDE_CONTENT
+          actionType: ModerationActionType.HIDE_CONTENT,
+          details: "Confirmed spam content."
         })
       ])
     );
+    expect(updatedReport.moderationActions[0]).not.toHaveProperty("details");
     expect(prisma.auditLogs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -685,6 +687,28 @@ describe("TakeModerationActionDto validation", () => {
     ).rejects.toMatchObject({
       response: {
         message: expect.arrayContaining(["property notes should not exist"])
+      }
+    });
+  });
+
+  it("rejects the old details property", async () => {
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true
+    });
+
+    await expect(
+      pipe.transform(
+        {
+          actionType: ModerationActionType.HIDE_CONTENT,
+          details: "Use reason instead."
+        },
+        metadata
+      )
+    ).rejects.toMatchObject({
+      response: {
+        message: expect.arrayContaining(["property details should not exist"])
       }
     });
   });

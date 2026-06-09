@@ -96,3 +96,17 @@ curl -X POST http://localhost:3000/admin/reports/<report-id>/actions \
     "reason": "Confirmed spam content."
   }'
 ```
+
+The returned report includes moderation actions using the same `reason` field:
+
+```json
+{
+  "status": "RESOLVED",
+  "moderationActions": [
+    {
+      "actionType": "HIDE_CONTENT",
+      "reason": "Confirmed spam content."
+    }
+  ]
+}
+```

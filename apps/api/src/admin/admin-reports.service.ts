@@ -17,6 +17,22 @@ import { TakeModerationActionDto } from "./dto/take-moderation-action.dto";
 
 const REPORT_PAGE_SIZE = 20;
 
+type ReportWithModerationDetails = Prisma.ReportGetPayload<{
+  include: ReturnType<AdminReportsService["reportDetailIncludes"]>;
+}>;
+
+type ModerationActionResponse =
+  ReportWithModerationDetails["moderationActions"][number] extends infer Action
+    ? Omit<Action, "details"> & { reason: string | null }
+    : never;
+
+type ReportDetailResponse = Omit<
+  ReportWithModerationDetails,
+  "moderationActions"
+> & {
+  moderationActions: ModerationActionResponse[];
+};
+
 @Injectable()
 export class AdminReportsService {
   constructor(
@@ -66,7 +82,7 @@ export class AdminReportsService {
     return this.prisma.report.findUnique({
       where: { id: reportId },
       include: this.reportDetailIncludes()
-    });
+    }).then((report) => (report ? this.toReportDetailResponse(report) : null));
   }
 
   async assign(actorUserId: string, reportId: string, dto: AssignReportDto) {
@@ -116,7 +132,7 @@ export class AdminReportsService {
         }
       });
 
-      return updatedReport;
+      return this.toReportDetailResponse(updatedReport);
     });
   }
 
@@ -177,7 +193,7 @@ export class AdminReportsService {
           reportId: report.id,
           actorUserId,
           actionType: dto.actionType,
-          details: dto.reason ?? dto.details
+          details: dto.reason
         }
       });
 
@@ -297,7 +313,7 @@ export class AdminReportsService {
   private async findDetailedReportOrThrow(
     prisma: Prisma.TransactionClient,
     reportId: string
-  ) {
+  ): Promise<ReportDetailResponse> {
     const report = await prisma.report.findUnique({
       where: { id: reportId },
       include: this.reportDetailIncludes()
@@ -307,7 +323,21 @@ export class AdminReportsService {
       throw new NotFoundException("Report not found");
     }
 
-    return report;
+    return this.toReportDetailResponse(report);
+  }
+
+  private toReportDetailResponse(
+    report: ReportWithModerationDetails
+  ): ReportDetailResponse {
+    return {
+      ...report,
+      moderationActions: report.moderationActions.map(
+        ({ details, ...action }) => ({
+          ...action,
+          reason: details
+        })
+      )
+    };
   }
 
   private reportIncludes() {
