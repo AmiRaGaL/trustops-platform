@@ -1,4 +1,11 @@
-import { PrismaClient, Role } from "@prisma/client";
+import {
+  ContentType,
+  PrismaClient,
+  ReportReason,
+  ReportSeverity,
+  ReportStatus,
+  Role
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -23,6 +30,16 @@ const demoUsers = [
     email: "viewer@trustops.dev",
     name: "TrustOps Viewer",
     role: Role.VIEWER
+  },
+  {
+    email: "user1@trustops.dev",
+    name: "TrustOps User One",
+    role: Role.VIEWER
+  },
+  {
+    email: "user2@trustops.dev",
+    name: "TrustOps User Two",
+    role: Role.VIEWER
   }
 ] as const;
 
@@ -38,6 +55,8 @@ async function main() {
     }
   });
 
+  const usersByEmail = new Map<string, { id: string }>();
+
   for (const demoUser of demoUsers) {
     const user = await prisma.user.upsert({
       where: { email: demoUser.email },
@@ -50,6 +69,8 @@ async function main() {
         passwordHash
       }
     });
+
+    usersByEmail.set(demoUser.email, user);
 
     await prisma.membership.upsert({
       where: {
@@ -68,6 +89,99 @@ async function main() {
       }
     });
   }
+
+  await prisma.contentItem.deleteMany({
+    where: {
+      organizationId: organization.id,
+      externalId: {
+        in: ["seed-post-1", "seed-comment-1", "seed-profile-1"]
+      }
+    }
+  });
+
+  const owner = usersByEmail.get("owner@trustops.dev");
+  const admin = usersByEmail.get("admin@trustops.dev");
+  const moderator = usersByEmail.get("mod@trustops.dev");
+  const viewer = usersByEmail.get("viewer@trustops.dev");
+
+  if (!owner || !admin || !moderator || !viewer) {
+    throw new Error("Seed users were not created");
+  }
+
+  const post = await prisma.contentItem.create({
+    data: {
+      organizationId: organization.id,
+      authorUserId: viewer.id,
+      type: ContentType.POST,
+      title: "Neighborhood safety update",
+      body: "Sharing an update from the community forum.",
+      externalId: "seed-post-1"
+    }
+  });
+
+  const comment = await prisma.contentItem.create({
+    data: {
+      organizationId: organization.id,
+      authorUserId: owner.id,
+      type: ContentType.COMMENT,
+      body: "This comment needs a moderator decision.",
+      externalId: "seed-comment-1"
+    }
+  });
+
+  await prisma.contentItem.create({
+    data: {
+      organizationId: organization.id,
+      authorUserId: admin.id,
+      type: ContentType.PROFILE,
+      title: "Demo profile",
+      body: "Sample profile content for Phase 2 moderation review.",
+      externalId: "seed-profile-1"
+    }
+  });
+
+  const spamReport = await prisma.report.create({
+    data: {
+      organizationId: organization.id,
+      contentItemId: post.id,
+      reporterUserId: owner.id,
+      assignedModeratorId: moderator.id,
+      reason: ReportReason.SPAM,
+      severity: ReportSeverity.MEDIUM,
+      status: ReportStatus.IN_REVIEW,
+      description: "Looks like repeated promotional content."
+    }
+  });
+
+  await prisma.reportEvent.create({
+    data: {
+      reportId: spamReport.id,
+      actorUserId: owner.id,
+      toStatus: ReportStatus.OPEN,
+      message: "Seed report created"
+    }
+  });
+
+  await prisma.reportEvent.create({
+    data: {
+      reportId: spamReport.id,
+      actorUserId: moderator.id,
+      fromStatus: ReportStatus.OPEN,
+      toStatus: ReportStatus.IN_REVIEW,
+      message: "Seed report assigned"
+    }
+  });
+
+  await prisma.report.create({
+    data: {
+      organizationId: organization.id,
+      contentItemId: comment.id,
+      reporterUserId: viewer.id,
+      reason: ReportReason.HARASSMENT,
+      severity: ReportSeverity.HIGH,
+      description: "Concern about targeted language."
+    }
+  });
 }
 
 main()
